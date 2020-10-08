@@ -13,7 +13,7 @@ type IResult<T> = std::result::Result<T, Box<dyn Error>>;
 #[repr(C)]
 #[derive(Debug)]
 pub(super) struct TWrap<T: Default + Copy> {
-    pub ptr: T,
+    ptr: T,
 }
 
 impl<T: Default + Copy> Clone for TWrap<T> {
@@ -26,9 +26,9 @@ impl<T: Default + Copy> Copy for TWrap<T> {}
 
 #[derive(Debug)]
 pub(super) struct ShObj<T: Default + Copy> {
-    pub data: *mut TWrap<T>,
-    pub file_name: Cow<'static, str>,
-    pub owner: bool,
+    data: *mut TWrap<T>,
+    file_name: Cow<'static, str>,
+    owner: bool,
 }
 
 impl<T: Default + Copy> DerefAble<T> for ShObj<T> {

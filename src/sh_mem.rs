@@ -7,8 +7,10 @@ cfg_if::cfg_if! {
         mod unix;
         use unix as sh;
     } else if #[cfg(windows)] {
-        // mod windows;
-        // use windows as sh;
+        mod windows;
+        use windows as sh;
+    } else {
+        panic!("No shared memory model available.");
     }
 }
 
@@ -47,8 +49,19 @@ pub struct ShMemCfg<T: Default> {
 
 impl<T: Default> Default for ShMemCfg<T> {
     fn default() -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(unix)] {
+                let name = "/shmem_{}";
+            } else if #[cfg(windows)] {
+                let name = "Global\\{}";
+            } else {
+                let name = "placeholder".to_string();
+                panic!();
+            }
+        };
+
         Self {
-            file_name: format!("shmem_{}", rand::random::<u16>()),
+            file_name: name.to_string(),
             owner: false,
             _marker: PhantomData,
         }
@@ -62,7 +75,18 @@ impl<T: Default + Copy> ShMemCfg<T> {
     }
 
     pub fn on_file(&mut self, name: String) -> &mut Self {
-        self.file_name = name;
+        cfg_if::cfg_if! {
+            if #[cfg(unix)] {
+                let p_name = format!("/shmem_{}", name);
+            } else if #[cfg(windows)] {
+                let p_name = format!("Global\\{}", name);
+            } else {
+                let p_name = "placeholder".to_string();
+                panic!();
+            }
+        };
+
+        self.file_name = p_name;
         self
     }
 

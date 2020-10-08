@@ -4,11 +4,21 @@ edition = "2018"
 name    = "safe_ipc"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 cfg-if = "0.1.10"
 rand   = "0.7.3"
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.18.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.9", features = [
+    "ntdef",
+    "winerror",
+    "errhandlingapi",
+    "handleapi",
+    "memoryapi",
+    "winbase",
+    "winnt",
+    "securitybaseapi",
+] }

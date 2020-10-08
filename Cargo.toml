@@ -5,20 +5,12 @@ name    = "safe_ipc"
 version = "0.1.0"
 
 [dependencies]
-cfg-if = "0.1.10"
-rand   = "0.7.3"
+cfg-if    = "1.0.0"
+getrandom = "0.2.0"
+oorandom  = "11.1.2"
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.18.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = [
-    "ntdef",
-    "winerror",
-    "errhandlingapi",
-    "handleapi",
-    "memoryapi",
-    "winbase",
-    "winnt",
-    "securitybaseapi",
-] }
+winapi = { version = "0.3.9", features = ["errhandlingapi", "handleapi", "memoryapi", "winerror"] }

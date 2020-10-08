@@ -49,13 +49,18 @@ pub struct ShMemCfg<T: Default> {
 
 impl<T: Default> Default for ShMemCfg<T> {
     fn default() -> Self {
+        let mut seed = [0_u8; 8];
+        getrandom::getrandom(&mut seed).expect("Error on getrandom!");
+
+        let mut rnd = oorandom::Rand32::new(u64::from_ne_bytes(seed));
+
         cfg_if::cfg_if! {
             if #[cfg(unix)] {
-                let name = "/shmem_{}";
+                let name = format!("/shmem_{}", rnd.rand_u32());
             } else if #[cfg(windows)] {
-                let name = "Global\\{}";
+                let name = format!("Global\\{}", rnd.rand_u32());
             } else {
-                let name = "placeholder".to_string();
+                let name = String::new();
                 panic!();
             }
         };
@@ -81,7 +86,7 @@ impl<T: Default + Copy> ShMemCfg<T> {
             } else if #[cfg(windows)] {
                 let p_name = format!("Global\\{}", name);
             } else {
-                let p_name = "placeholder".to_string();
+                let p_name = String::new();
                 panic!();
             }
         };

@@ -1,9 +1,22 @@
 [package]
-authors = ["Jerónimo Sánchez <jeronimosg@hotmail.es>"]
-edition = "2018"
-name    = "safe-ipc"
-version = "0.1.0"
+authors     = ["Jerónimo Sánchez <jeronimosg@hotmail.es>"]
+categories  = ["os", "memory-management", "concurrency", "api-bindings"]
+description = "IPC crate for Unix and Windows."
+edition     = "2018"
+keywords    = ["ipc", "shared_memory"]
+license     = "Apache-2.0"
+name        = "safe-ipc"
+repository  = "https://www.github.com/UpsettingBoy/safe-ipc"
+version     = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cfg-if    = "1.0.0"
+getrandom = "0.2.0"
+oorandom  = "11.1.2"
+
+[target.'cfg(unix)'.dependencies]
+nix = "0.18.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.9", features = ["errhandlingapi", "handleapi", "memoryapi", "winerror"] }

@@ -10,11 +10,14 @@
 //!
 //! # Example
 //! ## Owner process
-//! ```
+//! ```no_run
+//! use std::error::Error;
+//! use safe_ipc::sh_mem;
+//!
 //! fn main() -> Result<(), Box<dyn Error>> {
-//!     let mut mem = sh_mem::ShMemConf::<u32>::default()
+//!     let mut mem = sh_mem::ShMemCfg::<u32>::default()
 //!          .owner()
-//!          .on_file("test_program")
+//!          .on_file("test_program".to_string())
 //!          .build()?;
 //!
 //!     // ShMem<T> implements Deref and DerefMut for T.
@@ -22,16 +25,23 @@
 //!     assert_eq!(*mem, 10); //Read.
 //!
 //!     loop {} //Used to keep the process alive, thus the allocated shared memory too.
+//!     
+//!     Ok(())
 //! }
 //! ```
 //! ## Any other process
-//! ```
+//! ```no_run
+//! use std::error::Error;
+//! use safe_ipc::sh_mem;
+//!
 //! fn main() -> Result<(), Box<dyn Error>> {
-//!     let mut mem = sh_mem::ShMemConf::<u32>::default()
-//!              .on_file("test_program")
+//!     let mut mem = sh_mem::ShMemCfg::<u32>::default()
+//!              .on_file("test_program".to_string())
 //!              .build()?;
 //!
 //!     assert_eq!(*mem, 10); //Read.
+//!
+//!     Ok(())
 //! }
 //! ```
 
@@ -88,7 +98,7 @@ impl<T: Default + Copy> DerefMut for ShMem<T> {
 /// Configures and initilizes a shared memory region.
 /// By default, the segment name is ramdomly created and this instance is not the owner of the memory object.
 /// # Example
-/// ```
+/// ```no_compile
 /// let memory = ShMemCfg::<u32>::default().build().unwrap();
 ///
 /// ```

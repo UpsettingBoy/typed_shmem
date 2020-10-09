@@ -8,11 +8,10 @@ use nix::{
 use super::DerefAble;
 
 type RawFd = i32;
-type IResult<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[repr(C)]
 #[derive(Debug)]
-pub(super) struct TWrap<T: Default + Copy> {
+struct TWrap<T: Default + Copy> {
     ptr: T,
 }
 
@@ -98,7 +97,9 @@ impl<T: Default + Copy> Drop for ShObj<T> {
 mod unix_fn {
     use nix::{fcntl::OFlag, sys::mman, sys::stat::Mode, unistd};
 
-    use super::{IResult, RawFd};
+    use crate::sh_mem::IResult;
+
+    use super::RawFd;
 
     pub fn create_fd<T>(name: &str) -> IResult<RawFd> {
         let size = std::mem::size_of::<T>();

@@ -7,11 +7,9 @@ use winapi::{
 
 use super::DerefAble;
 
-type IResult<T> = std::result::Result<T, Box<dyn Error>>;
-
 #[repr(C)]
 #[derive(Debug)]
-pub(super) struct TWrap<T: Default + Copy> {
+struct TWrap<T: Default + Copy> {
     ptr: T,
 }
 
@@ -91,7 +89,7 @@ impl<T: Default + Copy> Drop for ShObj<T> {
     }
 }
 
-pub(super) mod windows_fn {
+mod windows_fn {
     use winapi::{
         ctypes::c_void,
         shared::minwindef::FALSE,
@@ -104,7 +102,9 @@ pub(super) mod windows_fn {
         },
     };
 
-    use super::{IResult, TWrap};
+    use crate::sh_mem::IResult;
+
+    use super::TWrap;
 
     pub fn create_handle<T: Default + Copy>(name: *mut u16) -> IResult<HANDLE> {
         let handle = unsafe {
@@ -151,7 +151,7 @@ pub(super) mod windows_fn {
             return Err(format!("Mapping HANDLE error: {}", error_code).into());
         }
 
-        Ok(map as *mut c_void)
+        Ok(map)
     }
 
     pub fn open_handle(name: *mut u16) -> IResult<HANDLE> {

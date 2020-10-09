@@ -1,3 +1,40 @@
+//! # Shared memory
+//! This module contains all the structs and functions needed to create shared memory objects under Unix and Windows.
+//!
+//! In order of a type `T` to be compatible with the shared memory implementation here present it must be
+//! `T: Default + Copy`.
+//!
+//! # Panics
+//! If the platform of which this crate is compiled does not comply with cfg(unix) nor with cfg(windows),
+//! the program will **panic** at runtime.
+//!
+//! # Example
+//! ## Owner process
+//! ```
+//! fn main() -> Result<(), Box<dyn Error>> {
+//!     let mut mem = sh_mem::ShMemConf::<u32>::default()
+//!          .owner()
+//!          .on_file("test_program")
+//!          .build()?;
+//!
+//!     // ShMem<T> implements Deref and DerefMut for T.
+//!     *mem = 10; //Write.
+//!     assert_eq!(*mem, 10); //Read.
+//!
+//!     loop {} //Used to keep the process alive, thus the allocated shared memory too.
+//! }
+//! ```
+//! ## Any other process
+//! ```
+//! fn main() -> Result<(), Box<dyn Error>> {
+//!     let mut mem = sh_mem::ShMemConf::<u32>::default()
+//!              .on_file("test_program")
+//!              .build()?;
+//!
+//!     assert_eq!(*mem, 10); //Read.
+//! }
+//! ```
+
 use std::{
     convert::TryFrom, error::Error, fmt::Debug, marker::PhantomData, ops::Deref, ops::DerefMut,
 };
@@ -14,15 +51,24 @@ cfg_if::cfg_if! {
     }
 }
 
-pub(crate) trait DerefAble<T> {
+type IResult<T> = std::result::Result<T, Box<dyn Error>>;
+
+/// Don't forget to implement this trait on each platform for `ShObj`.
+trait DerefAble<T> {
     fn get_t(&self) -> &T;
     fn get_t_mut(&mut self) -> &mut T;
 }
 
+/// Contains the platform-specific implementation details for the shared memory. The memory itself it is accessed
+/// through the `Deref` and `DerefMut` traits.
+///
+/// It must be created using [ShMemCfg](ShMemCfg) or _Shared memory configurator_.
+///
+/// # To keep in mind
+/// The memory does not implement any form of between-process synchronization.
 #[derive(Debug)]
 pub struct ShMem<T: Default + Copy> {
     map: sh::ShObj<T>,
-    _marker: PhantomData<T>,
 }
 
 impl<T: Default + Copy> Deref for ShMem<T> {
@@ -39,15 +85,22 @@ impl<T: Default + Copy> DerefMut for ShMem<T> {
     }
 }
 
+/// Configures and initilizes a shared memory region.
+/// By default, the segment name is ramdomly created and this instance is not the owner of the memory object.
+/// # Example
+/// ```
+/// let memory = ShMemCfg::<u32>::default().build().unwrap();
+///
+/// ```
 #[derive(Debug)]
-pub struct ShMemCfg<T: Default> {
+pub struct ShMemCfg<T: Default + Copy> {
     file_name: String,
     owner: bool,
 
     _marker: PhantomData<T>,
 }
 
-impl<T: Default> Default for ShMemCfg<T> {
+impl<T: Default + Copy> Default for ShMemCfg<T> {
     fn default() -> Self {
         let mut seed = [0_u8; 8];
         getrandom::getrandom(&mut seed).expect("Error on getrandom!");
@@ -74,11 +127,20 @@ impl<T: Default> Default for ShMemCfg<T> {
 }
 
 impl<T: Default + Copy> ShMemCfg<T> {
+    /// Makes this instance the owner of the shared memory object. Only **one** instance referencing the same
+    /// segmente can be the owner or the segment could be double freed.
+    /// # Returns
+    /// Mutable reference to the configurator.
     pub fn owner(&mut self) -> &mut Self {
         self.owner = true;
         self
     }
 
+    /// Name of the segment of the shared memory.
+    /// # Params
+    /// `name`: Name of the segment.
+    /// # Returns
+    /// Mutable reference to the configurator.
     pub fn on_file(&mut self, name: String) -> &mut Self {
         cfg_if::cfg_if! {
             if #[cfg(unix)] {
@@ -95,12 +157,12 @@ impl<T: Default + Copy> ShMemCfg<T> {
         self
     }
 
+    /// Builds a [ShMem](ShMem) with the configuration of this instance of [ShMemCfg](ShMemCfg).
+    /// # Returns
+    /// A result wrapping the memory segment.
     pub fn build(&mut self) -> Result<ShMem<T>, Box<dyn Error>> {
         let obj = sh::ShObj::try_from(self)?;
 
-        Ok(ShMem {
-            map: obj,
-            _marker: PhantomData,
-        })
+        Ok(ShMem { map: obj })
     }
 }

@@ -97,7 +97,7 @@ impl<T: Default + Copy> Drop for ShObj<T> {
 mod unix_fn {
     use nix::{fcntl::OFlag, sys::mman, sys::stat::Mode, unistd};
 
-    use crate::sh_mem::IResult;
+    use crate::IResult;
 
     use super::RawFd;
 

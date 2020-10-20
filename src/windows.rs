@@ -102,7 +102,7 @@ mod windows_fn {
         },
     };
 
-    use crate::sh_mem::IResult;
+    use crate::IResult;
 
     use super::TWrap;
 

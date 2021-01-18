@@ -1,108 +1,96 @@
-use std::{borrow::Cow, convert::TryFrom, error::Error};
+use std::{convert::TryFrom, ffi::c_void};
 
-use nix::{
-    libc::c_void,
-    sys::mman::{self, MapFlags, ProtFlags},
-};
+use nix::sys::mman::{self, MapFlags, ProtFlags};
+use zerocopy::{AsBytes, FromBytes};
 
-use super::DerefAble;
+use crate::{common::ShMemOps, error::ShMemErr, ShMemCfg};
 
 type RawFd = i32;
 
-#[repr(C)]
-#[derive(Debug)]
-struct TWrap<T: Default + Copy> {
-    ptr: T,
-}
-
-impl<T: Default + Copy> Clone for TWrap<T> {
-    fn clone(&self) -> Self {
-        Self { ..*self }
-    }
-}
-
-impl<T: Default + Copy> Copy for TWrap<T> {}
-
-#[derive(Debug)]
-pub(super) struct ShObj<T: Default + Copy> {
-    data: *mut TWrap<T>,
-    file_name: Cow<'static, str>,
+struct ShObj<T>
+where
+    T: AsBytes + FromBytes + Default,
+{
+    data: *mut T,
+    file_name: String,
     owner: bool,
 }
 
-impl<T: Default + Copy> DerefAble<T> for ShObj<T> {
-    fn get_t(&self) -> &T {
-        unsafe { &(*self.data).ptr }
-    }
+impl<T> TryFrom<ShMemCfg<T>> for ShObj<T>
+where
+    T: AsBytes + FromBytes + Default,
+{
+    type Error = ShMemErr;
 
-    fn get_t_mut(&mut self) -> &mut T {
-        unsafe { &mut (*self.data).ptr }
-    }
-}
-
-impl<T: Default + Copy> TryFrom<&mut super::ShMemCfg<T>> for ShObj<T> {
-    type Error = Box<dyn Error>;
-
-    fn try_from(value: &mut super::ShMemCfg<T>) -> Result<Self, Self::Error> {
+    fn try_from(value: ShMemCfg<T>) -> Result<Self, Self::Error> {
         let size = std::mem::size_of::<T>();
         let prot = ProtFlags::PROT_READ | ProtFlags::PROT_WRITE | ProtFlags::PROT_EXEC;
         let flags = MapFlags::MAP_SHARED;
 
         let fd = if value.owner {
-            unix_fn::create_fd::<T>(&value.file_name)?
+            unix_fn::create_fd(size, &value.file_name)?
         } else {
             unix_fn::open_fd(&value.file_name)?
         };
 
+        let map = unsafe { mman::mmap(std::ptr::null_mut(), size, prot, flags, fd, 0)? };
+        let data_ptr = map as *mut T;
+
         unsafe {
-            let map = mman::mmap(std::ptr::null_mut(), size, prot, flags, fd, 0)?;
-            let wrap_ptr = map as *mut TWrap<T>;
-
             if value.owner {
-                *wrap_ptr = TWrap { ptr: T::default() };
+                *data_ptr = T::default();
             }
-
-            Ok(Self {
-                data: wrap_ptr,
-                file_name: Cow::from(value.file_name.clone()),
-                owner: value.owner,
-            })
         }
+
+        Ok(Self {
+            data: data_ptr,
+            file_name: value.file_name.clone(),
+            owner: value.owner,
+        })
     }
 }
 
-impl<T: Default + Copy> Clone for ShObj<T> {
-    fn clone(&self) -> Self {
-        Self {
-            file_name: self.file_name.clone(),
-            owner: false,
-            ..*self
-        }
-    }
-}
-
-impl<T: Default + Copy> Drop for ShObj<T> {
+impl<T> Drop for ShObj<T>
+where
+    T: AsBytes + FromBytes + Default,
+{
     fn drop(&mut self) {
         unsafe {
             mman::munmap(self.data as *mut c_void, std::mem::size_of::<T>())
-                .expect("Error Drop munmap");
-
-            if self.owner {
-                unix_fn::delete_fd(&self.file_name).expect("Error Drop shm_unlink");
-            }
+                .expect("Error Drop munmap!");
         }
+
+        if self.owner {
+            unix_fn::delete_fd(&self.file_name).expect("Error Drop shm_unlink!");
+        }
+    }
+}
+
+impl<T> ShMemOps<T> for ShObj<T>
+where
+    T: AsBytes + FromBytes + Default,
+{
+    fn get_t(&self) -> &T {
+        unsafe { &(*self.data) }
+    }
+
+    fn get_t_mut(&mut self) -> &mut T {
+        unsafe { &mut *self.data }
     }
 }
 
 mod unix_fn {
-    use nix::{fcntl::OFlag, sys::mman, sys::stat::Mode, unistd};
+    use nix::{
+        fcntl::OFlag,
+        sys::{mman, stat::Mode},
+        unistd,
+    };
 
-    use crate::IResult;
+    use crate::error::Result;
 
     use super::RawFd;
 
-    pub fn create_fd<T>(name: &str) -> IResult<RawFd> {
-        let size = std::mem::size_of::<T>();
+    pub fn create_fd(size: usize, name: &str) -> Result<RawFd> {
         let flag =
             OFlag::O_TRUNC | OFlag::O_CREAT | OFlag::O_RDWR | OFlag::O_DSYNC | OFlag::O_RSYNC;
         let mode = Mode::S_IRWXU | Mode::S_IRWXG | Mode::S_IRWXO;
@@ -114,7 +102,7 @@ mod unix_fn {
         Ok(fd)
     }
 
-    pub fn open_fd(name: &str) -> IResult<RawFd> {
+    pub fn open_fd(name: &str) -> Result<RawFd> {
         let flag = OFlag::O_RDWR | OFlag::O_DSYNC | OFlag::O_RSYNC;
         let mode = Mode::S_IRWXU | Mode::S_IRWXG | Mode::S_IRWXO;
 
@@ -123,7 +111,7 @@ mod unix_fn {
         Ok(fd)
     }
 
-    pub fn delete_fd(name: &str) -> IResult<()> {
+    pub fn delete_fd(name: &str) -> Result<()> {
         Ok(mman::shm_unlink(name)?)
     }
 }

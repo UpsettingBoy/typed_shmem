@@ -36,8 +36,8 @@ where
         let map = unsafe { mman::mmap(std::ptr::null_mut(), size, prot, flags, fd, 0)? };
         let data_ptr = map as *mut T;
 
-        unsafe {
-            if value.owner {
+        if value.owner {
+            unsafe {
                 *data_ptr = T::default();
             }
         }

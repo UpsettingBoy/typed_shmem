@@ -1,6 +1,6 @@
 use zerocopy::{AsBytes, FromBytes};
 
-pub(crate) trait ShMemOps<T>: Drop
+pub(crate) trait ShMemOps<T>
 where
     T: AsBytes + FromBytes + Default,
 {

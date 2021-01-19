@@ -6,7 +6,6 @@ use std::{
 
 use common::ShMemOps;
 use error::Result;
-use unix::ShObj;
 use zerocopy::{AsBytes, FromBytes};
 
 mod common;
@@ -98,7 +97,7 @@ pub struct ShMem<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    map: ShObj<T>,
+    map: sh::ShObj<T>,
 }
 
 impl<T> Deref for ShMem<T>

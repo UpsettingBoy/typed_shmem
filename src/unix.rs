@@ -7,7 +7,7 @@ use crate::{common::ShMemOps, error::ShMemErr, ShMemCfg};
 
 type RawFd = i32;
 
-struct ShObj<T>
+pub(super) struct ShObj<T>
 where
     T: AsBytes + FromBytes + Default,
 {

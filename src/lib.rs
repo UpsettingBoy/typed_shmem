@@ -87,7 +87,7 @@ where
         self
     }
 
-    pub fn build(mut self) -> Result<ShMem<T>> {
+    pub fn build(self) -> Result<ShMem<T>> {
         let map = sh::ShObj::try_from(self)?;
 
         Ok(ShMem { map })

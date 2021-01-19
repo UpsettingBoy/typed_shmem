@@ -1,3 +1,47 @@
+//! # typed_shmem
+//! In order of a type `T` to be compatible with the shared memory implementation here present it must be
+//! `T: zerocopy::AsBytes + zerocopy::FromBytes + Default`.
+//!
+//!
+//! # Example
+//! ## Owner process
+//! ```no_run
+//! use typed_shmem as sh;
+//!
+//! fn main() -> Result<(), ShMemErr> {
+//!     let mut mem = sh::ShMemCfg::<u32>::default()
+//!          .as_owner()
+//!          .on_file("test_program")
+//!          .build()?;
+//!
+//!     // ShMem<T> implements Deref and DerefMut.
+//!     *mem = 10; //Write.
+//!     assert_eq!(*mem, 10); //Read.
+//!
+//!     loop {} //Used to keep the process alive, thus the allocated shared memory too.
+//!     
+//!     Ok(())
+//! }
+//! ```
+//! ## Any other process
+//! ```no_run
+//! use typed_shmem as sh;
+//!
+//! fn main() -> Result<(), ShMemErr> {
+//!     let mut mem = sh::ShMemCfg::<u32>::default()
+//!              .on_file("test_program")
+//!              .build()?;
+//!
+//!     assert_eq!(*mem, 10); //Read.
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Panics
+//! If the platform on which this crate is compiled does not comply with cfg(unix) nor with cfg(windows),
+//! the program will **panic**.
+
 use std::{
     convert::TryFrom,
     marker::PhantomData,
@@ -23,6 +67,13 @@ cfg_if::cfg_if! {
     }
 }
 
+/// Configures and initilizes a shared memory region.
+/// By default, the segment name is ramdomly created and this instance is not the owner of the memory object.
+/// # Example
+/// ```no_compile
+/// let memory = ShMemCfg::<u32>::default().build().unwrap();
+///
+///
 pub struct ShMemCfg<T>
 where
     T: AsBytes + FromBytes + Default,
@@ -65,7 +116,12 @@ impl<T> ShMemCfg<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    pub fn with_filename(&mut self, name: &str) -> &mut Self {
+    /// Name of the segment of the shared memory.
+    /// # Params
+    /// `name`: Name of the segment.
+    /// # Returns
+    /// Mutable reference to the configurator.
+    pub fn on_filename(&mut self, name: &str) -> &mut Self {
         cfg_if::cfg_if! {
             if #[cfg(unix)] {
                 let p_name = format!("/shmem_{}", name);
@@ -81,11 +137,18 @@ where
         self
     }
 
+    /// Makes this instance the owner of the shared memory object. Only **one** instance referencing the same
+    /// segmente can be the owner or the segment could be double freed.
+    /// # Returns
+    /// Mutable reference to the configurator.
     pub fn as_owner(&mut self) -> &mut Self {
         self.owner = true;
         self
     }
 
+    /// Builds a [ShMem](ShMem) with the configuration of this instance of [ShMemCfg](ShMemCfg).
+    /// # Returns
+    /// A result wrapping the memory segment.
     pub fn build(self) -> Result<ShMem<T>> {
         let map = sh::ShObj::try_from(self)?;
 
@@ -93,6 +156,13 @@ where
     }
 }
 
+/// Contains the platform-specific implementation details for shared memory. The memory itself it is accessed
+/// through the `Deref` and `DerefMut` traits.
+///
+/// It must be created using [ShMemCfg](ShMemCfg) or _Shared memory configurator_.
+///
+/// # To keep in mind
+/// The memory does not implement any form of synchronization. It also draw on UBs to glue `Deref` and `DerefMut` traits to the internal implementation.
 pub struct ShMem<T>
 where
     T: AsBytes + FromBytes + Default,

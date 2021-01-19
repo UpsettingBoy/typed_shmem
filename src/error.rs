@@ -1,5 +1,3 @@
-use core::panic;
-
 pub type Result<T> = std::result::Result<T, ShMemErr>;
 
 cfg_if::cfg_if! {
@@ -11,7 +9,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(unix)] {
         #[derive(Debug)]
         pub enum ShMemErr {
-            Unix(String),
+            Unix(nix::Error),
         }
 
         impl From<nix::Error> for ShMemErr {

@@ -7,6 +7,7 @@
 //! ## Owner process
 //! ```no_run
 //! use typed_shmem as sh;
+//! use typed_shmem::error::ShMemErr;
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
@@ -26,6 +27,7 @@
 //! ## Any other process
 //! ```no_run
 //! use typed_shmem as sh;
+//! use typed_shmem::error::ShMemErr;
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
@@ -121,7 +123,7 @@ where
     /// `name`: Name of the segment.
     /// # Returns
     /// Mutable reference to the configurator.
-    pub fn on_filename(&mut self, name: &str) -> &mut Self {
+    pub fn on_file(mut self, name: &str) -> Self {
         cfg_if::cfg_if! {
             if #[cfg(unix)] {
                 let p_name = format!("/shmem_{}", name);
@@ -141,7 +143,7 @@ where
     /// segmente can be the owner or the segment could be double freed.
     /// # Returns
     /// Mutable reference to the configurator.
-    pub fn as_owner(&mut self) -> &mut Self {
+    pub fn set_owner(mut self) -> Self {
         self.owner = true;
         self
     }
@@ -160,6 +162,10 @@ where
 /// through the `Deref` and `DerefMut` traits.
 ///
 /// It must be created using [ShMemCfg](ShMemCfg) or _Shared memory configurator_.
+///
+/// # Drop
+/// When `ShMem` is dropped, it removes the handle to the shared memory file. If the dropped instance of `ShMem` is _owner_, it will
+/// try to remove the shared memory file too (on *nix).
 ///
 /// # To keep in mind
 /// The memory does not implement any form of synchronization. It also draw on UBs to glue `Deref` and `DerefMut` traits to the internal implementation.

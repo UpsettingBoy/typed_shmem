@@ -6,12 +6,9 @@ use winapi::{
 };
 use zerocopy::{AsBytes, FromBytes};
 
-use crate::{
-    common::{self, ShMemOps},
-    error::ShMemErr,
-    ShMemCfg,
-};
+use crate::{common::ShMemOps, error::ShMemErr, ShMemCfg};
 
+#[allow(dead_code)]
 pub(super) struct ShObj<T>
 where
     T: AsBytes + FromBytes + Default,
@@ -29,9 +26,7 @@ where
     type Error = ShMemErr;
 
     fn try_from(value: ShMemCfg<T>) -> Result<Self, Self::Error> {
-        let mut name_utf16 = winapi::um::winnt::SE_CREATE_GLOBAL_NAME
-            .encode_utf16()
-            .collect::<Vec<u16>>();
+        let mut name_utf16 = value.file_name.encode_utf16().collect::<Vec<u16>>();
 
         let file_map_handle = if value.owner {
             windows_fn::create_handle::<T>(name_utf16.as_mut_ptr())?

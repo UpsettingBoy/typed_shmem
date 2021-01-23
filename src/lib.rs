@@ -103,7 +103,7 @@ where
             if #[cfg(unix)] {
                 let name = format!("/shmem_{}", rnd.rand_u32());
             } else if #[cfg(windows)] {
-                let name = format!("Global\\{}", rnd.rand_u32());
+                let name = format!("{}", rnd.rand_u32());
             } else {
                 let name = String::new();
                 panic!();
@@ -132,7 +132,7 @@ where
             if #[cfg(unix)] {
                 let p_name = format!("/shmem_{}", name);
             } else if #[cfg(windows)] {
-                let p_name = format!("Global\\{}", name);
+                let p_name = name.to_string();
             } else {
                 let p_name = String::new();
                 panic!();

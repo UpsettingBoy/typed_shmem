@@ -1,7 +1,11 @@
 //! # typed_shmem
+//! Provides the [ShMem](ShMem) and [ShMemCfg](ShMemCfg) types for creating a shared memory region.
+//!
 //! In order of a type `T` to be compatible with the shared memory implementation here present it must be
 //! `T: zerocopy::AsBytes + zerocopy::FromBytes + Default`.
 //!
+//! Since there is no synchronization when reading/mutating the shared data, the programmer has to be
+//! responsible of how to do so in order to not corrupt said data.
 //!
 //! # Example
 //! ## Owner process
@@ -11,7 +15,7 @@
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
-//!          .as_owner()
+//!          .set_owner()
 //!          .on_file("test_program")
 //!          .build()?;
 //!
@@ -31,7 +35,7 @@
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
-//!              .on_file("test_program")
+//!              .set_file("test_program")
 //!              .build()?;
 //!
 //!     assert_eq!(*mem, 10); //Read.

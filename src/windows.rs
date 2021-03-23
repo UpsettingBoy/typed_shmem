@@ -37,8 +37,13 @@ where
         let ptr = windows_fn::map_file_view::<T>(file_map_handle)? as *mut T;
 
         if value.owner {
+            let init = match value.init_value {
+                Some(v) => v,
+                None => T::default(),
+            };
+
             unsafe {
-                *ptr = T::default();
+                *data_ptr = init;
             }
         }
 

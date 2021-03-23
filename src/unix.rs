@@ -37,8 +37,13 @@ where
         let data_ptr = map as *mut T;
 
         if value.owner {
+            let init = match value.init_value {
+                Some(v) => v,
+                None => T::default(),
+            };
+
             unsafe {
-                *data_ptr = T::default();
+                *data_ptr = init;
             }
         }
 

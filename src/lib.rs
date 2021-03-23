@@ -86,6 +86,7 @@ where
 {
     owner: bool,
     file_name: String,
+    init_value: Option<T>,
     _marker: PhantomData<T>,
 }
 
@@ -113,6 +114,7 @@ where
         Self {
             owner: false,
             file_name: name,
+            init_value: None,
             _marker: PhantomData,
         }
     }
@@ -149,6 +151,16 @@ where
     /// Mutable reference to the configurator.
     pub fn set_owner(mut self) -> Self {
         self.owner = true;
+        self
+    }
+
+    /// Sets the initial value of the shared memory region. If skipped, `T::default()` will be used.
+    /// # Params
+    /// `init`: Initial value
+    /// # Returns
+    /// Mutable reference to the configurator.
+    pub fn with_initial_value(mut self, init: T) -> Self {
+        self.init_value = Some(init);
         self
     }
 

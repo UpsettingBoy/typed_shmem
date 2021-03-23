@@ -35,7 +35,7 @@
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
-//!              .set_file("test_program")
+//!              .on_file("test_program")
 //!              .build()?;
 //!
 //!     assert_eq!(*mem, 10); //Read.

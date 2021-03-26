@@ -4,6 +4,6 @@ pub(crate) trait ShMemOps<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    fn get_t(&self) -> &T;
-    fn get_t_mut(&mut self) -> &mut T;
+    unsafe fn get_t(&self) -> &T;
+    unsafe fn get_t_mut(&mut self) -> &mut T;
 }

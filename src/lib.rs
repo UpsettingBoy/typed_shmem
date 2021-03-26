@@ -192,22 +192,15 @@ where
     map: sh::ShObj<T>,
 }
 
-impl<T> Deref for ShMem<T>
+impl<T> ShMemOps<T> for ShMem<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
+    unsafe fn get_t(&self) -> &T {
         self.map.get_t()
     }
-}
 
-impl<T> DerefMut for ShMem<T>
-where
-    T: AsBytes + FromBytes + Default,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
+    unsafe fn get_t_mut(&mut self) -> &mut T {
         self.map.get_t_mut()
     }
 }

@@ -12,6 +12,7 @@
 //! ```no_run
 //! use typed_shmem as sh;
 //! use typed_shmem::error::ShMemErr;
+//! use typed_shmem::common::ShMemOps;
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
@@ -19,9 +20,12 @@
 //!          .on_file("test_program")
 //!          .build()?;
 //!
-//!     // ShMem<T> implements Deref and DerefMut.
-//!     *mem = 10; //Write.
-//!     assert_eq!(*mem, 10); //Read.
+//!     //Writing
+//!     unsafe { *mem.get_t_mut() = 10; }
+//!
+//!     //Reading
+//!     let val = unsafe { mem.get_t() };
+//!     assert_eq!(*val, 10);
 //!
 //!     loop {} //Used to keep the process alive, thus the allocated shared memory too.
 //!     
@@ -32,13 +36,15 @@
 //! ```no_run
 //! use typed_shmem as sh;
 //! use typed_shmem::error::ShMemErr;
+//! use typed_shmem::common::ShMemOps;
 //!
 //! fn main() -> Result<(), ShMemErr> {
 //!     let mut mem = sh::ShMemCfg::<u32>::default()
 //!              .on_file("test_program")
 //!              .build()?;
 //!
-//!     assert_eq!(*mem, 10); //Read.
+//!     let val = unsafe { mem.get_t() };
+//!     assert_eq!(*val, 10);
 //!
 //!     Ok(())
 //! }
@@ -48,17 +54,13 @@
 //! If the platform on which this crate is compiled does not comply with cfg(unix) nor with cfg(windows),
 //! the program will **panic**.
 
-use std::{
-    convert::TryFrom,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-};
+use std::convert::TryFrom;
 
 use common::ShMemOps;
 use error::Result;
 use zerocopy::{AsBytes, FromBytes};
 
-mod common;
+pub mod common;
 pub mod error;
 
 cfg_if::cfg_if! {
@@ -78,8 +80,7 @@ cfg_if::cfg_if! {
 /// # Example
 /// ```no_compile
 /// let memory = ShMemCfg::<u32>::default().build().unwrap();
-///
-///
+/// ```
 pub struct ShMemCfg<T>
 where
     T: AsBytes + FromBytes + Default,
@@ -87,7 +88,6 @@ where
     owner: bool,
     file_name: String,
     init_value: Option<T>,
-    _marker: PhantomData<T>,
 }
 
 impl<T> Default for ShMemCfg<T>
@@ -115,7 +115,6 @@ where
             owner: false,
             file_name: name,
             init_value: None,
-            _marker: PhantomData,
         }
     }
 }
@@ -124,7 +123,7 @@ impl<T> ShMemCfg<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    /// Name of the segment of the shared memory.
+    /// Name of the shared memory segment.
     /// # Params
     /// `name`: Name of the segment.
     /// # Returns
@@ -146,7 +145,7 @@ where
     }
 
     /// Makes this instance the owner of the shared memory object. Only **one** instance referencing the same
-    /// segmente can be the owner or the segment could be double freed.
+    /// segment can be the owner or the segment could be double freed.
     /// # Returns
     /// Mutable reference to the configurator.
     pub fn set_owner(mut self) -> Self {
@@ -174,8 +173,8 @@ where
     }
 }
 
-/// Contains the platform-specific implementation details for shared memory. The memory itself it is accessed
-/// through the `Deref` and `DerefMut` traits.
+/// Contains the platform-specific implementation details for shared memory.
+/// The memory itself it is accessed via the [ShMemOps](ShMemOps) trait.
 ///
 /// It must be created using [ShMemCfg](ShMemCfg) or _Shared memory configurator_.
 ///
@@ -184,7 +183,7 @@ where
 /// try to remove the shared memory file too (on *nix).
 ///
 /// # To keep in mind
-/// The memory does not implement any form of synchronization. It also draw on UBs to glue `Deref` and `DerefMut` traits to the internal implementation.
+/// The memory does not implement any form of synchronization. It also draw on UBs to glue the `ShMemOps` trait to the internal implementation.
 pub struct ShMem<T>
 where
     T: AsBytes + FromBytes + Default,

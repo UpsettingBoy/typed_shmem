@@ -34,7 +34,7 @@ where
             windows_fn::open_handle(name_utf16.as_mut_ptr())?
         };
 
-        let ptr = windows_fn::map_file_view::<T>(file_map_handle)? as *mut T;
+        let data_ptr = windows_fn::map_file_view::<T>(file_map_handle)? as *mut T;
 
         if value.owner {
             let init = match value.init_value {
@@ -48,7 +48,7 @@ where
         }
 
         Ok(ShObj {
-            data: ptr,
+            data: data_ptr,
             handle: file_map_handle,
             file_name: name_utf16,
             owner: value.owner,

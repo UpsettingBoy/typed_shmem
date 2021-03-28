@@ -76,7 +76,7 @@ cfg_if::cfg_if! {
 }
 
 /// Configures and initilizes a shared memory region.
-/// By default, the segment name is ramdomly created and this instance is not the owner of the memory object.
+/// By default, the segment name is randomly created and this instance is not the owner of the memory object.
 /// # Example
 /// ```no_compile
 /// let memory = ShMemCfg::<u32>::default().build().unwrap();

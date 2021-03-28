@@ -34,16 +34,21 @@ where
             windows_fn::open_handle(name_utf16.as_mut_ptr())?
         };
 
-        let ptr = windows_fn::map_file_view::<T>(file_map_handle)? as *mut T;
+        let data_ptr = windows_fn::map_file_view::<T>(file_map_handle)? as *mut T;
 
         if value.owner {
+            let init = match value.init_value {
+                Some(v) => v,
+                None => T::default(),
+            };
+
             unsafe {
-                *ptr = T::default();
+                *data_ptr = init;
             }
         }
 
         Ok(ShObj {
-            data: ptr,
+            data: data_ptr,
             handle: file_map_handle,
             file_name: name_utf16,
             owner: value.owner,
@@ -67,12 +72,12 @@ impl<T> ShMemOps<T> for ShObj<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    fn get_t(&self) -> &T {
-        unsafe { &(*self.data) }
+    unsafe fn get_t(&self) -> &T {
+        &(*self.data)
     }
 
-    fn get_t_mut(&mut self) -> &mut T {
-        unsafe { &mut (*self.data) }
+    unsafe fn get_t_mut(&mut self) -> &mut T {
+        &mut (*self.data)
     }
 }
 

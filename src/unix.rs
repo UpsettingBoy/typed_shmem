@@ -37,8 +37,13 @@ where
         let data_ptr = map as *mut T;
 
         if value.owner {
+            let init = match value.init_value {
+                Some(v) => v,
+                None => T::default(),
+            };
+
             unsafe {
-                *data_ptr = T::default();
+                *data_ptr = init;
             }
         }
 
@@ -70,12 +75,12 @@ impl<T> ShMemOps<T> for ShObj<T>
 where
     T: AsBytes + FromBytes + Default,
 {
-    fn get_t(&self) -> &T {
-        unsafe { &(*self.data) }
+    unsafe fn get_t(&self) -> &T {
+        &(*self.data)
     }
 
-    fn get_t_mut(&mut self) -> &mut T {
-        unsafe { &mut *self.data }
+    unsafe fn get_t_mut(&mut self) -> &mut T {
+        &mut *self.data
     }
 }
 

@@ -7,17 +7,17 @@ keywords    = ["shared", "memory", "ipc", "inter", "communication"]
 license     = "Apache-2.0"
 name        = "typed_shmem"
 repository  = "https://www.github.com/UpsettingBoy/typed_shmem"
-version     = "0.2.1"
+version     = "0.3.0"
 
 
 [dependencies]
 cfg-if    = "1.0.0"
 getrandom = "0.2.0"
 oorandom  = "11.1.2"
-zerocopy  = "0.3.0"
+zerocopy  = "0.4.0"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.19.0"
+nix = "0.20.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["errhandlingapi", "handleapi", "memoryapi", "winerror"] }

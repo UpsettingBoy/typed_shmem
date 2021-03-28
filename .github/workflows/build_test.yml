@@ -1,4 +1,4 @@
-name: Rust
+name: rust-build-test
 
 on:
   push:
@@ -10,24 +10,44 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_test_linux:
+  x86_64-unknown-linux-gnu:
 
     runs-on: ubuntu-latest
+    name: x86_64-unknown-linux-gnu
 
     steps:
     - uses: actions/checkout@v2
-    - name: Linux(Ubuntu) build
-      run: cargo build --verbose
-    - name: Run Linux(Ubuntu) tests
-      run: cargo test --verbose
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: x86_64-unknown-linux-gnu
+        override: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --verbose
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --release --verbose
 
-  build_test_windows:
+  x86_64-pc-windows-msvc:
 
     runs-on: windows-latest
+    name: x86_64-pc-windows-msvc
 
     steps:
     - uses: actions/checkout@v2
-    - name: Windows build
-      run: cargo build --verbose
-    - name: Run Windows tests
-      run: cargo test --verbose
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: x86_64-pc-windows-msvc
+        override: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --verbose
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --release --verbose
